@@ -1,0 +1,46 @@
+# Secrets
+.env
+.env.local
+fastlane/asc_api_key.json
+
+# Supabase local dev
+supabase/.env
+supabase/.temp/
+supabase/functions/.env
+
+# Per-environment Xcode config (contains Supabase URLs + anon keys)
+Sources/__APP_NAME__/Config/Debug.local.xcconfig
+Sources/__APP_NAME__/Config/Release.local.xcconfig
+Sources/__APP_NAME__/Config/Staging.xcconfig
+Sources/__APP_NAME__/Config/Production.xcconfig
+
+# XcodeGen-generated project (regenerate with: xcodegen generate)
+*.xcodeproj/
+!*.xcodeproj/project.pbxproj
+
+# Build output
+build/
+fastlane/test_output/
+fastlane/ui_test_output/
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Fastlane
+fastlane/report.xml
+
+# CocoaPods
+Pods/
+
+# Ruby
+vendor/bundle/
+.bundle/
+
+# OS
+.DS_Store
+Thumbs.db

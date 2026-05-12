@@ -1,0 +1,14 @@
+git_url(ENV["MATCH_GIT_URL"] || "git@github.com:mi-j/ios-certificates.git")
+git_branch("main")
+
+storage_mode("git")
+type("appstore")
+
+app_identifier(ENV["APP_IDENTIFIER"] || "__BUNDLE_ID__")
+username(ENV["APPLE_ID"] || "your@email.com")
+team_id(ENV["TEAM_ID"])
+
+# Use App Store Connect API key (avoids 2FA issues in CI)
+api_key_path("fastlane/asc_api_key.json") if File.exist?("fastlane/asc_api_key.json")
+
+readonly(true)  # CI should only read, not create new certs

@@ -1,0 +1,6 @@
+app_identifier(ENV["APP_IDENTIFIER"] || "__BUNDLE_ID__")
+apple_id(ENV["APPLE_ID"] || "your@email.com")
+team_id(ENV["TEAM_ID"])
+
+# App Store Connect API Key (preferred over Apple ID + password)
+# Set ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_CONTENT env vars.
