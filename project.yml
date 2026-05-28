@@ -30,6 +30,11 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0.0
         ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+        # Auto-answer App Store Connect's "Missing Compliance" export-control prompt.
+        # Only takes effect when the spawned app uses GENERATE_INFOPLIST_FILE = YES
+        # (the modern, build-setting-driven Info.plist path). For apps that commit
+        # an Info.plist, add <key>ITSAppUsesNonExemptEncryption</key><false/> there.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: "NO"
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
