@@ -7,6 +7,14 @@ options:
   xcodeVersion: "15.3"
   createIntermediateGroups: true
 
+# Applied to every target. The template declares INFOPLIST_KEY_* values, which
+# only take effect with a generated Info.plist, but never enabled generation —
+# so codesign failed with "target does not have an Info.plist file". Enable it
+# globally; per-target INFOPLIST_KEY_* settings then populate the generated plist.
+settings:
+  base:
+    GENERATE_INFOPLIST_FILE: "YES"
+
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
@@ -35,11 +43,23 @@ targets:
         # (the modern, build-setting-driven Info.plist path). For apps that commit
         # an Info.plist, add <key>ITSAppUsesNonExemptEncryption</key><false/> there.
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: "NO"
+        # Bundle-completeness keys for the generated Info.plist. Without these,
+        # App Store upload rejects the build (missing launch screen / no
+        # orientations declared — codes 90475/90474).
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        DEVELOPMENT_TEAM: F2DV5V68Z4
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
           DEBUG_INFORMATION_FORMAT: dwarf
-        Release: {}
+        # Manual match signing for the device archive (release.yml). Kept out of
+        # Debug so the simulator test job (ci.yml) builds unsigned.
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER: "match AppStore __BUNDLE_ID__"
     dependencies:
       - package: Supabase
         product: Supabase

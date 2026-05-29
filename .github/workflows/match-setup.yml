@@ -1,0 +1,48 @@
+name: Match — Bootstrap Signing (run once)
+
+# Run this manually ONCE to create the App Store signing profile for
+# __BUNDLE_ID__ in mi-j/ios-certificates (the distribution cert is shared and
+# already exists). After this succeeds, the release pipeline uses match in
+# readonly mode. Requires the App ID __BUNDLE_ID__ to exist in the Apple
+# Developer portal first.
+on:
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'Certificate type to create/renew'
+        required: true
+        default: 'appstore'
+        type: choice
+        options: [appstore, adhoc, development]
+
+env:
+  APP_IDENTIFIER: ${{ secrets.APP_IDENTIFIER }}
+  TEAM_ID: ${{ secrets.TEAM_ID }}
+  APPLE_ID: ${{ secrets.APPLE_ID }}
+
+jobs:
+  bootstrap-signing:
+    name: Create / renew signing assets
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: gems-${{ hashFiles('Gemfile.lock') }}
+          restore-keys: gems-
+
+      - name: Install Bundler dependencies
+        run: bundle config set --local path vendor/bundle && bundle install
+
+      - name: Bootstrap signing (create cert + profile via ASC API key)
+        run: bundle exec fastlane bootstrap_signing
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}

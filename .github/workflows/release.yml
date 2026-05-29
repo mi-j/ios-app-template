@@ -1,0 +1,82 @@
+name: Release
+
+# Deliberate shipping pipeline (kept out of push CI so a signing/upload
+# failure can't keep main red). Two ways in:
+#   * workflow_dispatch  -> pick a lane (beta / release / submit)
+#   * push a tag v*      -> runs the `beta` lane (TestFlight)
+#
+# PREREQUISITES (one-time, MikeA gate — see repo README / status notes):
+#   1. Register App ID `__BUNDLE_ID__` in the Apple Developer portal.
+#   2. Create the app record in App Store Connect.
+#   3. Mint the App Store signing profile into mi-j/ios-certificates, e.g.
+#      run `bundle exec fastlane match appstore` locally (readonly:false) once,
+#      or via match-setup.yml. CI uses match readonly and will fail until it exists.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Fastlane lane to run'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta     # build + upload to TestFlight
+          - release  # build + upload binary + metadata (no review submission)
+          - submit   # submit the latest build for App Store review
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SCHEME: __APP_NAME__
+  APP_IDENTIFIER: __BUNDLE_ID__
+  TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  APPLE_ID: ${{ secrets.APPLE_ID }}
+
+jobs:
+  ship:
+    # Apple requires apps built with the iOS 26 SDK (Xcode 26) for ASC upload;
+    # older macos images ship older Xcode and uploads are rejected.
+    runs-on: macos-26
+    environment: appstore
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: gems-${{ hashFiles('Gemfile.lock') }}
+          restore-keys: gems-
+
+      - name: Install Bundler dependencies
+        run: bundle config set --local path vendor/bundle && bundle install
+
+      - name: Generate Xcode project (XcodeGen)
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen generate
+          ls -la *.xcodeproj
+
+      - name: Run Fastlane ${{ github.event.inputs.lane || 'beta' }}
+        run: bundle exec fastlane ${{ github.event.inputs.lane || 'beta' }}
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL }}
+          REVIEW_EMAIL: ${{ secrets.REVIEW_EMAIL }}
+          REVIEW_PHONE: ${{ secrets.REVIEW_PHONE }}

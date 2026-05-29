@@ -61,16 +61,16 @@ foreach ($f in $files) {
 }
 Write-Output "Updated $changed file(s)."
 
-# Rename Sources/__APP_NAME__ and the App.swift inside
-$srcDir = Join-Path $root "Sources\__APP_NAME__"
-if (Test-Path $srcDir) {
-    Rename-Item -Path $srcDir -NewName $AppName
-    Write-Output "Renamed Sources\__APP_NAME__ -> Sources\$AppName"
-    $appSwift = Join-Path $root "Sources\$AppName\__APP_NAME__App.swift"
-    if (Test-Path $appSwift) {
-        Rename-Item -Path $appSwift -NewName "${AppName}App.swift"
-        Write-Output "Renamed __APP_NAME__App.swift -> ${AppName}App.swift"
-    }
+# Rename every file/dir whose name contains __APP_NAME__ (Sources/, Tests/, the
+# App.swift, the test files, ...). Deepest paths first so children are renamed
+# before their parent directory. Skip .git.
+$toRename = Get-ChildItem -Path $root -Recurse -Force |
+    Where-Object { $_.FullName -notlike "*\.git\*" -and $_.Name -like "*__APP_NAME__*" } |
+    Sort-Object { $_.FullName.Length } -Descending
+foreach ($item in $toRename) {
+    $newName = $item.Name -replace '__APP_NAME__', $AppName
+    Rename-Item -Path $item.FullName -NewName $newName
+    Write-Output "Renamed $($item.Name) -> $newName"
 }
 
 # Self-delete

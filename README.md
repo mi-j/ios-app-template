@@ -28,12 +28,29 @@ repo, renames the `Sources/__APP_NAME__/` directory, then deletes itself.
 | `__APP_NAME__` | Pascal-case app name (also Xcode scheme + target) | `ProDraftAI` |
 | `__BUNDLE_ID__` | Reverse-DNS bundle identifier | `com.mi-j.prodraftai` |
 
+## What's included (buildable & shippable out of the box)
+
+- Compiling SwiftUI shell + **baseline unit and UI tests** so CI is green from commit one.
+- A **placeholder app icon** (single-size 1024, in `Assets.xcassets`) so the first
+  TestFlight upload passes Apple's bundle checks. **Replace it with the real icon
+  before any public release.**
+- Generated-Info.plist keys for launch screen + orientations, manual `match` signing
+  pinned to the App Store profile, and a one-time signing-bootstrap workflow.
+
 ## What's NOT in the template
 
 - App-specific SwiftUI features (build per project)
-- App icons / launch assets (drop into `Sources/__APP_NAME__/Resources/Assets.xcassets`)
+- The **real** app icon / launch assets (replace the placeholder in `Sources/__APP_NAME__/Resources/Assets.xcassets`)
 - App Store metadata (`fastlane/metadata/`, `fastlane/screenshots/`) — generate per app
 - `Pods/` / `*.xcodeproj/` — generated locally via `pod install` + `xcodegen generate`
+
+## Shipping a new app
+
+1. Register the App ID `__BUNDLE_ID__` in the Apple Developer portal and create the
+   app record in App Store Connect.
+2. Run the **Match — Bootstrap Signing** workflow once (Actions tab → `match-setup.yml`)
+   to mint the App Store provisioning profile into `mi-j/ios-certificates`.
+3. Ship: run **Release** (`release.yml`) with `lane=beta` for TestFlight, or push a `v*` tag.
 
 ## Required secrets / vars per app
 
@@ -52,17 +69,22 @@ The repo's `Settings → Secrets and variables → Actions` needs:
 ## Layout
 
 ```
-.github/workflows/ci.yml          # lint + test + UI test + archive + TestFlight
-fastlane/Fastfile                 # lanes: lint, test, ui_test, beta, release, submit
+.github/workflows/ci.yml          # push/PR: lint + unit + UI tests (macos-15, xcodegen)
+.github/workflows/release.yml     # dispatch + v* tags: beta/release/submit (macos-26)
+.github/workflows/match-setup.yml # one-time: mint the App Store signing profile
+fastlane/Fastfile                 # lanes: lint, test, ui_test, sync_signing, bootstrap_signing, beta, release, submit
 fastlane/Appfile                  # bundle id / apple id / team id (env-driven)
 fastlane/Matchfile                # cert sync (env-driven)
-project.yml                       # XcodeGen project spec
+project.yml                       # XcodeGen project spec (GENERATE_INFOPLIST_FILE, signing, icon)
 Sources/__APP_NAME__/             # SwiftUI app shell
+Sources/__APP_NAME__/Resources/Assets.xcassets/  # placeholder AppIcon (replace before release)
+Tests/__APP_NAME__Tests/          # baseline unit test
+Tests/__APP_NAME__UITests/        # baseline UI test
 Podfile                           # Sentry + Mixpanel pods
 Gemfile                           # Fastlane + CocoaPods
 .gitignore
 .env.example                      # full env spec; copy to .env locally
-bootstrap.ps1                     # placeholder substitution (run once)
+bootstrap.ps1                     # placeholder substitution + renames (run once)
 ```
 
 ## License

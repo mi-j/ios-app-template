@@ -78,6 +78,22 @@ platform :ios do
     match(type: "appstore", readonly: true, api_key: api_key)
   end
 
+  # ONE-TIME: create the App Store cert (if missing) + provisioning profile for
+  # this app in the certs repo, authenticating to the Dev Portal via the ASC API
+  # key (NOT interactive Apple ID). Run via match-setup.yml. After it succeeds,
+  # sync_signing (readonly) finds what it created.
+  desc "BOOTSTRAP code signing — generate cert + profile via the ASC API key"
+  lane :bootstrap_signing do
+    api_key = load_asc_api_key
+    match(
+      type: "appstore",
+      readonly: false,
+      api_key: api_key,
+      force_for_new_devices: false,
+      force: true   # regenerate the profile so newly-enabled capabilities are picked up
+    )
+  end
+
   desc "Build and archive the app (no upload)"
   lane :build do
     sync_signing
